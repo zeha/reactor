@@ -1,7 +1,5 @@
 import socket
 import select
-import resource
-import os
 
 
 _DEBUG = False
