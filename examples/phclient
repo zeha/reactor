@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+# -*- mode: python -*-
+
+import sys
+sys.path.insert(0, '../lib')
+
+import reactor
+
+class PhConnection(reactor.ClientConnection):
+
+    def __init__(self):
+        super().__init__(('127.0.0.1', '4444'))
+        transmit_buffer = b'Hello, world!'
+        self.transmit_buffer = transmit_buffer
+
+
+    def receive_buffer_full(self, context):
+        print("PhConnection receive()")
+        print(self.receive_buffer)
+        self.consume_receive_buffer(len(self.receive_buffer))
+
+
+
+r = reactor.Reactor()
+try:
+    r.add_client(PhConnection())
+    r.run()
+finally:
+    r.stop()

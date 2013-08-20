@@ -1,0 +1,6 @@
+Example implementation of a TCP-oriented reactor.
+
+Server and client examples are provided in examples/.
+
+Tested on Python 3.3 on Linux
+

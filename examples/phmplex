@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+# -*- mode: python -*-
+
+import sys
+sys.path.insert(0, '../lib')
+
+import reactor
+
+
+class HttpConnection(reactor.Connection):
+    EOL1 = b'\n\n'
+    EOL2 = b'\n\r\n'
+
+    def __init__(self, socket, address):
+        print('HttpConnection(%r, %r)' % (socket, address))
+        super().__init__(socket, address)
+        transmit_buffer  = b'HTTP/1.0 200 OK\r\nDate: Mon, 1 Jan 1996 01:01:01 GMT\r\n'
+        transmit_buffer += b'Content-Type: text/plain\r\nContent-Length: 13\r\n\r\n'
+        transmit_buffer += b'Hello, world!'
+        self.transmit_buffer = transmit_buffer
+
+
+    def receive(self, context):
+        super().receive(context)
+        if HttpConnection.EOL1 in self.receive_buffer or HttpConnection.EOL2 in self.receive_buffer:
+            context.set_file_out(self.fileno())
+            print('-'*40 + '\n' + self.receive_buffer.decode()[:-2])
+            self.consume_receive_buffer(len(self.receive_buffer))
+
+
+class PhConnection(reactor.Connection):
+
+    def __init__(self, socket, address):
+        print('PhConnection(%r, %r)' % (socket, address))
+        super().__init__(socket, address)
+        self.transmit_buffer = b''
+
+    def receive(self, context):
+        super().receive(context)
+        if len(self.receive_buffer) > 4:
+            print('PH: ' + self.receive_buffer.decode())
+            self.transmit_buffer = b'LOLOL'
+            context.set_file_out(self.fileno())
+            self.consume_receive_buffer(len(self.receive_buffer))
+
+
+
+
+class HttpServerSocket(reactor.ServerSocket):
+
+    def listen(self):
+        self.create_listen_socket(('0.0.0.0', 8080))
+
+
+    def accept(self):
+        return HttpConnection(*self.socket.accept())
+
+
+
+class PhServerSocket(reactor.ServerSocket):
+
+    def listen(self):
+        self.create_listen_socket(('0.0.0.0', 4444))
+
+
+    def accept(self):
+        return PhConnection(*self.socket.accept())
+
+
+
+
+
+rtor = reactor.Reactor([HttpServerSocket(), PhServerSocket()])
+
+try:
+    print("Listening...")
+    rtor.run()
+
+finally:
+    rtor.stop()
+
